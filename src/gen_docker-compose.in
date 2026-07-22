@@ -75,8 +75,10 @@ check_base_generator_args
 init_temp_dir
 
 prepare_base_images
+images_sum=$(dir_tree_files_digest "${temp_dir}/images")
 
 prepare_base_manifests
+manifests_sum=$(dir_tree_files_digest "${temp_dir}/manifests")
 
 tar -C "${temp_dir}" -cf "${temp_dir}/manifests.tar" manifests
 tar -C "${temp_dir}" -czf "${temp_dir}/images.tar.gz" images
@@ -90,6 +92,10 @@ EOF
 # images. The user has to do that themselves (and there is a hint about this in
 # the --help output).
 software_name="mender-docker-compose.${project_name}"
+
+# Add a checksum uniquely identifying this composition
+composition_sum=$(echo "$project_name" "$images_sum" "$manifests_sum" | sha256_digest)
+checksum_provides_key="${software_name}.checksum"
 
 # There can only be one project handled by the docker-compose Update Module so
 # every new one installed removes any old installed before.
@@ -105,6 +111,7 @@ mender-artifact write module-image \
     --output-path "${output_path}" \
     --software-name "${software_name}" \
     --clears-provides "${clears_provides}" --no-default-clears-provides \
+    --provides "${checksum_provides_key}:${composition_sum}" \
     "${passthrough_args[@]}"
 rc=$?
 
