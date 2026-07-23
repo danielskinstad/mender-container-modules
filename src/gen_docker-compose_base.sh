@@ -37,6 +37,11 @@ check_base_dependencies() {
         echo "Please follow the instructions here to install skopeo and then try again: https://github.com/containers/skopeo" >&2
         return 1
     fi
+
+    if ! check_dependency sha256sum; then
+        echo "Please install the sha256sum utility" >&2
+        return 1
+    fi
 }
 
 declare -a device_types
@@ -199,6 +204,14 @@ init_temp_dir() {
         fi
     }
     trap cleanup EXIT SIGQUIT SIGTERM
+}
+
+sha256_digest() {
+    sha256sum | cut -d' ' -f1
+}
+
+dir_tree_files_digest() {
+    find "$1" -mindepth 1 -type f | LC_ALL="C" sort | xargs cat | sha256_digest
 }
 
 prepare_base_images() {
